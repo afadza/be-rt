@@ -37,6 +37,19 @@ export default new (class RumahServices {
         status: req.body.status,
         pemilik: req.body.pemilik,
       };
+      const findNomorRumah = await this.rumahRepository.findOne({
+        where: { nomor_rumah: data.nomor_rumah },
+      });
+      if (findNomorRumah) {
+        return res.status(400).json({
+          message: "Nomor Rumah Sudah Ada, Silahkan Gunakan Nomor Rumah Lain",
+        });
+      }
+      if (data.status !== "Kosong" && data.pemilik === "") {
+        return res.status(400).json({
+          message: "Pemilik harus diisi",
+        });
+      }
       if (data.nomor_rumah == 0) {
         return res.status(400).json({
           message: "Nomor Rumah Tidak Boleh Kosong",
