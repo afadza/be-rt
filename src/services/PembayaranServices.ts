@@ -51,12 +51,12 @@ export default new (class PembayaranServices {
       }
       if (bulanSudah && bulanSudah.status === "Lunas") {
         return res.status(401).json({
-          message: "Pembayaran bulan ini sudah lunas"
+          message: "Pembayaran bulan ini sudah lunas",
         });
       } else if (bulanSudah && bulanSudah.status === "Belum Lunas") {
         return res.status(400).json({
           message: "Kamu sudah bayar bulan ini, tapi masih kurang",
-          data: 115000 - bulanSudah.jumlah
+          data: 115000 - bulanSudah.jumlah,
         });
       }
       let status = satpam + kebersihan;
@@ -104,9 +104,9 @@ export default new (class PembayaranServices {
         });
       }
 
-      if(pembayaranToUpdate.status === "Lunas") {
+      if (pembayaranToUpdate.status === "Lunas") {
         return res.status(400).json({
-          message: "Pembayaran bulan ini sudah lunas"
+          message: "Pembayaran bulan ini sudah lunas",
         });
       }
 
@@ -140,7 +140,7 @@ export default new (class PembayaranServices {
   async pembayaranPerBulan(req: Request, res: Response) {
     try {
       const { bulan } = req.query;
-  
+
       let queryBuilder = this.rumahRepository
         .createQueryBuilder("rumah")
         .leftJoinAndSelect(
@@ -149,6 +149,7 @@ export default new (class PembayaranServices {
           "pembayaran.bulan = :bulan"
         )
         .select([
+          "pembayaran.id as id",
           "rumah.nomor_rumah as nomor_rumah",
           "rumah.pemilik as pemilik",
           "pembayaran.bulan as bulan",
@@ -161,20 +162,20 @@ export default new (class PembayaranServices {
         .setParameter("bulan", bulan)
         .where("rumah.pemilik IS NOT NULL")
         .orderBy("rumah.nomor_rumah", "ASC");
-  
+
       if (bulan === "Tahun Ini") {
         queryBuilder = queryBuilder.andWhere("1 = 1");
       }
-  
+
       const allRumahPayments = await queryBuilder.getRawMany();
-  
+
       const rumahPayments = {};
-  
+
       allRumahPayments.forEach((payment) => {
         const nomorRumah = payment.nomor_rumah;
         const totalPembayaran = payment.jumlah || 0;
         const kembalian = totalPembayaran - 115000;
-  
+
         if (!rumahPayments[nomorRumah]) {
           rumahPayments[nomorRumah] = {
             nomor_rumah: nomorRumah,
@@ -182,8 +183,9 @@ export default new (class PembayaranServices {
             payments: [],
           };
         }
-  
+
         rumahPayments[nomorRumah].payments.push({
+          id: payment.id,
           bulan: payment.bulan === null ? bulan : payment.bulan,
           satpam: payment.satpam,
           kebersihan: payment.kebersihan,
@@ -194,26 +196,27 @@ export default new (class PembayaranServices {
               ? format(new Date(payment.created_at), "dd-MM-yyyy")
               : null,
         });
-  
-        rumahPayments[nomorRumah].kembalian =
-          kembalian <= 0 ? "" : kembalian;
+
+        rumahPayments[nomorRumah].kembalian = kembalian <= 0 ? "" : kembalian;
       });
-  
+
       const responseArray = Object.values(rumahPayments);
-  
+
       return res.status(200).json(responseArray);
     } catch (error) {
       return res.status(500).json(error);
     }
   }
-  
 
   async pembayaranPerRumah(req: Request, res: Response) {
     try {
       const { nomor_rumah } = req.query;
-  
-      const nomorRumah = typeof nomor_rumah === 'string' ? parseInt(nomor_rumah, 10) : nomor_rumah;
-  
+
+      const nomorRumah =
+        typeof nomor_rumah === "string"
+          ? parseInt(nomor_rumah, 10)
+          : nomor_rumah;
+
       const bulan = [
         "Januari",
         "Februari",
@@ -228,27 +231,27 @@ export default new (class PembayaranServices {
         "November",
         "Desember",
       ];
-  
+
       const rumah = await this.rumahRepository.findOne({
         relations: ["pembayaran"],
         where: { nomor_rumah: nomorRumah as number },
       });
-      
-  
+
       if (!rumah) {
         return res.status(400).json({
           message: "Rumah tidak ditemukan",
         });
       }
-  
+
       const pembayaranPerBulan = bulan.map((namaBulan) => {
         const pembayaranBulanIni = rumah.pembayaran.find(
           (pembayaran) => pembayaran.bulan === namaBulan
         );
-  
+
         return {
+          id: pembayaranBulanIni ? pembayaranBulanIni.id : null,
           satpam: pembayaranBulanIni ? pembayaranBulanIni.satpam : 0,
-          kebersihan: pembayaranBulanIni  ? pembayaranBulanIni.kebersihan : 0,
+          kebersihan: pembayaranBulanIni ? pembayaranBulanIni.kebersihan : 0,
           jumlah: pembayaranBulanIni ? pembayaranBulanIni.jumlah : 0,
           bulan: namaBulan,
           status: pembayaranBulanIni
@@ -256,7 +259,7 @@ export default new (class PembayaranServices {
             : "Belum Bayar",
         };
       });
-  
+
       return res.status(200).json({
         nomor_rumah: rumah.nomor_rumah,
         pemilik: rumah.pemilik,
@@ -266,9 +269,6 @@ export default new (class PembayaranServices {
       return res.status(500).json(error);
     }
   }
-  
-  
-  
 
   async findRekapTotal(req: Request, res: Response) {
     try {
@@ -315,6 +315,31 @@ export default new (class PembayaranServices {
       return res.status(200).json(rekapBulanan);
     } catch (error) {
       return res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+
+  async delete(req: Request, res: Response) {
+    try {
+      const { id } = req.query;
+
+      const pembayaranToDelete = await this.pembayaranRepository.findOne({
+        where: { id: parseInt(id as string, 10) },
+      });
+
+      if (!pembayaranToDelete) {
+        return res.status(404).json({
+          message: "Pembayaran not found",
+        });
+      }
+
+      await this.pembayaranRepository.remove(pembayaranToDelete);
+
+      return res.status(200).json({
+        message: "Pembayaran successfully deleted",
+        data: pembayaranToDelete,
+      });
+    } catch (error) {
+      return res.status(500).json(error);
     }
   }
 })();

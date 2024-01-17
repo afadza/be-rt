@@ -14,15 +14,19 @@ export default new (class PembayaranControllers {
     PembayaranServices.update(req, res);
   }
 
- pembayaranPerBulan(req: Request, res: Response) {
-   PembayaranServices.pembayaranPerBulan(req, res);
- }
+  pembayaranPerBulan(req: Request, res: Response) {
+    PembayaranServices.pembayaranPerBulan(req, res);
+  }
 
- findRekapTotal(req: Request, res: Response) {
-   PembayaranServices.findRekapTotal(req, res);
- }
+  findRekapTotal(req: Request, res: Response) {
+    PembayaranServices.findRekapTotal(req, res);
+  }
 
   pembayaranPerRumah(req: Request, res: Response) {
     PembayaranServices.pembayaranPerRumah(req, res);
+  }
+
+  delete(req: Request, res: Response) {
+    PembayaranServices.delete(req, res);
   }
 })();

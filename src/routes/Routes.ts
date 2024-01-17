@@ -15,5 +15,6 @@ router.patch("/pembayaran", PembayaranControllers.update);
 router.get("/pembayaran/bulanan", PembayaranControllers.pembayaranPerBulan);
 router.get("/pembayaran/rekap", PembayaranControllers.findRekapTotal);
 router.get("/pembayaran/rumah", PembayaranControllers.pembayaranPerRumah);
+router.delete("/pembayaran", PembayaranControllers.delete);
 
 export default router;
