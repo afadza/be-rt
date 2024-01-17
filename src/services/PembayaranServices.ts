@@ -50,7 +50,7 @@ export default new (class PembayaranServices {
         });
       }
       if (bulanSudah && bulanSudah.status === "Lunas") {
-        return res.status(400).json({
+        return res.status(401).json({
           message: "Pembayaran bulan ini sudah lunas"
         });
       } else if (bulanSudah && bulanSudah.status === "Belum Lunas") {
